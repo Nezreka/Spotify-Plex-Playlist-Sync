@@ -1,12 +1,13 @@
+
 {
-    "claude_api_key": "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",
+    "claude_api_key": "YOUR API KEY UPDATED BY APP",
     "plex_server": {
-        "url": "http://192.168.86.21:32400/",
-        "token": "P4DN9WyJ3KZm3WsfD235"
+        "url": "YOUR PLEX URL UPDATED BY APP",
+        "token": "YOUR PLEX TOKEN UPDATED BY APP"
     },
     "spotify": {
-        "client_id": "a0b939ee1cef4ecb8fb577b56e6ff5ec",
-        "client_secret": "ccd78f95e46442e5a4e429b5e58fb81c",
-        "refresh_token": "AQBRRSjAdjJMQC0DCgCKZy7l3APN7aUVKILyCNe_tgysA7kNVkxDKa5aWcGe9QaRReqMzzp6Yk3fhkB7S4RO_wLaFWyhsob3NY55edFbw4jRjw79OObXps5452ji-afJ9Ms"
+        "client_id": "YOUR SPOTIFY ID UPDATED BY APP",
+        "client_secret": "YOUR SPOTIFY SECRET UPDATED BY APP",
+        "refresh_token": "THIS WILL BE UPDATED BY APP"
     }
 }

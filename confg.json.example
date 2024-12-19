@@ -1,7 +1,0 @@
-{
-    "plex_url": "http://your-plex-server:32400",
-    "plex_token": "your-plex-token",
-    "anthropic_api_key": "your-claude-api-key",
-    "spotify_client_id": "your-spotify-client-id",
-    "spotify_client_secret": "your-spotify-client-secret"
-}

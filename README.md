@@ -36,16 +36,11 @@ cd spotify-to-plex-playlist
 ```
 
 2. Install required packages:
-```bash
-pip install -r requirements.txt
-```
+  All packages installed already. I screwed up the upload process.
 
 
 ## Configuration
 
-1. Copy `config.json.example` to `config.json`:
-```bash
-cp config.json.example config.json
 
 
 3. Set up environment variables:
@@ -56,7 +51,9 @@ ANTHROPIC_API_KEY=your-claude-api-key  # Optional
 ```
 
 ## Usage
-
+1. UPDATE .env FILE!
+2. Enter virtual environment in project directory
+3. run python main.py
 ```python
 from plex_service import PlexService
 
@@ -124,4 +121,4 @@ Feel free to submit issues, fork the repository, and create pull requests for an
 
 MIT License
 
-Would you like me to also provide the requirements.txt file separately?
+
