@@ -36,7 +36,7 @@ An intelligent Python tool that converts Spotify playlists to Plex playlists, fe
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/spotify-to-plex-playlist.git
+git clone https://github.com/Nezreka/Spotify-Plex-Playlist-Sync.git
 cd spotify-plex-playlist-sync
 ```
 
