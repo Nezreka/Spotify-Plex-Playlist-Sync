@@ -36,9 +36,7 @@ cd spotify-to-plex-playlist
 ```
 
 2. Install required packages:
-```bash
-pip install -r requirements.txt
-```
+  All packages installed already. I screwed up the upload process.
 
 
 ## Configuration
