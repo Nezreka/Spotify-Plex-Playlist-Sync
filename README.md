@@ -1,6 +1,10 @@
 
 # Spotify to Plex Playlist Sync
 
+
+![Alt text](https://i.imgur.com/Q6ST4Sw.png)
+
+
 An intelligent Python tool that converts Spotify playlists to Plex playlists, featuring advanced track matching and AI-assisted matching via Claude.
 
 ## Features
