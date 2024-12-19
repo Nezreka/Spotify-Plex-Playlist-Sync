@@ -1,5 +1,5 @@
 
-# Spotify to Plex Playlist Converter
+# Spotify to Plex Playlist Sync
 
 An intelligent Python tool that converts Spotify playlists to Plex playlists, featuring advanced track matching and AI-assisted matching via Claude.
 
@@ -26,17 +26,18 @@ An intelligent Python tool that converts Spotify playlists to Plex playlists, fe
 - Plex Media Server with a music library
 - Plex authentication token
 - Claude API key (optional, for AI-assisted matching)
+- Spotify API ID & Secret
 
 ## Installation
 
 1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/spotify-to-plex-playlist.git
-cd spotify-to-plex-playlist
+cd spotify-plex-playlist-sync
 ```
 
 2. Install required packages:
-  All packages installed already. I screwed up the upload process.
+  All packages installed already. I borked the upload process.
 
 
 ## Configuration
@@ -48,11 +49,13 @@ cd spotify-to-plex-playlist
 PLEX_URL=http://your-plex-server:32400
 PLEX_TOKEN=your-plex-token
 ANTHROPIC_API_KEY=your-claude-api-key  # Optional
+Spotify_Secret="Spotify secret"
+Spotify_ID="Spotify ID"
 ```
 
 ## Usage
 1. UPDATE .env FILE!
-2. Enter virtual environment in project directory
+2. Enter virtual environment in project directory - venv\scripts\activate
 3. run python main.py
 ```python
 from plex_service import PlexService
