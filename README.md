@@ -42,6 +42,7 @@ cd spotify-plex-playlist-sync
 
 2. Install required packages:
   All packages installed already. I borked the upload process.
+  You may need to install the requirements.txt anyway.
 
 
 ## Configuration
