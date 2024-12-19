@@ -44,6 +44,8 @@ cd spotify-plex-playlist-sync
   All packages installed already. I borked the upload process.
   You may need to install the requirements.txt anyway.
 
+For Macos you will will use pip3 and python3 to install / run the app.
+
 Required callback is: http://localhost:8888/callback
 
 You can change this to any you prefer in spotify_service.py
