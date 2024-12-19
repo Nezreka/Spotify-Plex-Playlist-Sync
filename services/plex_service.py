@@ -158,6 +158,7 @@ class PlexService:
 
     def find_track(self, title, artists_string):
         try:
+            MAX_TRACKS_TO_SEARCH = 100
             music_lib = self.get_music_library()
             artists = [artist.strip() for artist in artists_string.split(',')]
             primary_artist = artists[0] if artists else ""
@@ -182,7 +183,9 @@ class PlexService:
                 base_title = re.sub(r'\s*[-–(].*$', '', title).strip()
                 tracks = self.get_music_library().search(title=base_title, libtype='track') or []
 
-            print(f"Found {len(tracks)} potential tracks")
+            # Limit the number of tracks to search through
+            tracks = tracks[:MAX_TRACKS_TO_SEARCH]
+            print(f"Found {len(tracks)} potential tracks (limited to {MAX_TRACKS_TO_SEARCH})")
             
             # Try standard matching first
             for track in tracks:
@@ -219,8 +222,7 @@ class PlexService:
                     artist.lower() == track.grandparentTitle.lower() 
                     for artist in artists
                 )
-                
-                # High similarity matches
+                            # High similarity matches
                 title_similarity_match = (
                     title_score > 0.8 or
                     normalized_search_title in track_title or
@@ -238,18 +240,20 @@ class PlexService:
                     any(artist.lower() in track.originalTitle.lower() for artist in artists))
                 )
                 
-                if (direct_title_match and direct_artist_match) or (title_similarity_match and artist_similarity_match):
+                # Check for direct match first and return immediately if found
+                if direct_title_match and direct_artist_match:
+                    print(f"  ✓ Direct match found")
+                    return track
+                
+                # If we have a similarity match, add to potential matches
+                if title_similarity_match and artist_similarity_match:
                     match_score = title_score + artist_score
-                    if direct_title_match and direct_artist_match:
-                        match_score += 1.0
-                        
                     potential_matches.append({
                         'track': track,
                         'score': match_score,
-                        'direct_match': direct_title_match and direct_artist_match
+                        'direct_match': False
                     })
                     print(f"  ✓ Potential match found (score: {match_score})")
-                    print(f"    Direct match: {direct_title_match and direct_artist_match}")
                     print(f"    Similarity match: {title_similarity_match and artist_similarity_match}")
                 else:
                     print(f"  ✗ No match")
@@ -258,17 +262,11 @@ class PlexService:
                     print(f"    Title similarity match: {title_similarity_match}")
                     print(f"    Artist similarity match: {artist_similarity_match}")
 
-            # If we found matches through regular matching, return the best one
+            # If we found any potential matches, return the best one
             if potential_matches:
-                sorted_matches = sorted(
-                    potential_matches,
-                    key=lambda x: (x['direct_match'], x['score']),
-                    reverse=True
-                )
-                
-                best_match = sorted_matches[0]['track']
-                print(f"\n✓ Best match found: {best_match.title} by {best_match.grandparentTitle}")
-                return best_match
+                best_match = max(potential_matches, key=lambda x: x['score'])
+                print(f"\n✓ Best match found: {best_match['track'].title} by {best_match['track'].grandparentTitle}")
+                return best_match['track']
 
             # If no matches found, try additional matching strategies
             print("\nNo matches found through regular matching, trying additional matching...")
@@ -276,7 +274,7 @@ class PlexService:
             # Try different search approaches for more potential matches
             search_tracks = []
             
-            # Try searching with just the letters for abbreviated titles (e.g., "TNT" for "T.N.T.")
+            # Try searching with just the letters for abbreviated titles
             letters_only = ''.join(c for c in title if c.isalnum())
             print(f"Searching with letters only: {letters_only}")
             letter_tracks = music_lib.search(title=letters_only, libtype='track') or []
@@ -291,8 +289,8 @@ class PlexService:
             print(f"Searching with base title: {base_title}")
             base_tracks = music_lib.search(title=base_title, libtype='track') or []
 
-            # Combine all results
-            all_tracks = letter_tracks + first_word_tracks + base_tracks
+            # Combine all results and limit the total
+            all_tracks = (letter_tracks + first_word_tracks + base_tracks)[:MAX_TRACKS_TO_SEARCH]
             
             # Filter by artist similarity
             search_tracks = [
@@ -310,84 +308,57 @@ class PlexService:
             search_tracks = list({t.ratingKey: t for t in search_tracks}.values())
 
             if search_tracks:
-                print(f"\nFound {len(search_tracks)} potential tracks to analyze:")
-                track_list = [f"{i}: '{t.title}' by '{t.grandparentTitle}'" 
-                            for i, t in enumerate(search_tracks)]
-                
-                for track in track_list:
-                    print(track)
-
                 # Check for exact matches first
-                for i, track in enumerate(search_tracks):
-                    # Check for exact title match
+                for track in search_tracks:
                     if track.title.lower() == title.lower():
-                        # Check if artist matches or if it's Various Artists
                         if (any(artist.lower() in track.grandparentTitle.lower() for artist in artists) or
                             (track.grandparentTitle == 'Various Artists' and
                             hasattr(track, 'originalTitle') and
                             any(artist.lower() in track.originalTitle.lower() for artist in artists))):
-                            print(f"Found exact match: {track_list[i]}")
+                            print(f"\n✓ Found exact match in additional search: {track.title} by {track.grandparentTitle}")
                             return track
 
-                # If no exact match found, try Claude-assisted matching
-                print("\nNo exact match found, trying Claude-assisted matching...")
-                if not os.getenv('ANTHROPIC_API_KEY'):
-                    print("Note: Claude API not configured. Advanced matching unavailable.")
-                    return None
-
-                try:
-                    anthropic = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
-                    
-                    prompt = (
-                        f"Given the Spotify track '{title}' by '{artists_string}', "
-                        f"find the best matching track from this list and reply ONLY "
-                        f"with the index number. If no good match exists, reply with -1.\n\n"
-                        f"Note that titles might have variations (e.g., 'T.N.T' could be 'TNT' "
-                        f"or 'T N T'), and artist names might differ slightly.\n\n"
-                        f"Tracks:\n" + "\n".join(track_list)
-                    )
-
-                    print("\nSending request to Claude...")
-                    message = anthropic.messages.create(
-                        model="claude-3-sonnet-20240229",
-                        max_tokens=1,
-                        temperature=0,
-                        system="You are a music matching assistant. Only respond with the index number of the best match.",
-                        messages=[{
-                            "role": "user",
-                            "content": prompt
-                        }]
-                    )
-
+                # If no exact match found and Claude API is configured, try Claude-assisted matching
+                if os.getenv('ANTHROPIC_API_KEY'):
                     try:
-                        response_content = message.content[0].text.strip()
-                        print(f"Claude response: {response_content}")
+                        track_list = [f"{i}: '{t.title}' by '{t.grandparentTitle}'" 
+                                    for i, t in enumerate(search_tracks)]
                         
-                        # Handle various negative response formats
-                        if response_content in ['-', '-1', 'n/a', 'none']:
-                            print("Claude found no suitable match")
-                        else:
+                        anthropic = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+                        prompt = (
+                            f"Given the Spotify track '{title}' by '{artists_string}', "
+                            f"find the best matching track from this list and reply ONLY "
+                            f"with the index number. If no good match exists, reply with -1.\n\n"
+                            f"Tracks:\n" + "\n".join(track_list)
+                        )
+
+                        print("\nTrying Claude-assisted matching...")
+                        message = anthropic.messages.create(
+                            model="claude-3-sonnet-20240229",
+                            max_tokens=1,
+                            temperature=0,
+                            system="You are a music matching assistant. Only respond with the index number of the best match.",
+                            messages=[{
+                                "role": "user",
+                                "content": prompt
+                            }]
+                        )
+
+                        response_content = message.content[0].text.strip()
+                        if response_content not in ['-', '-1', 'n/a', 'none']:
                             try:
                                 match_index = int(response_content)
-                                if match_index >= 0 and match_index < len(search_tracks):
+                                if 0 <= match_index < len(search_tracks):
                                     print(f"Claude suggested match: {track_list[match_index]}")
                                     return search_tracks[match_index]
-                                else:
-                                    print("Claude response index out of range")
                             except ValueError:
-                                print(f"Could not parse Claude response as integer: {response_content}")
-
-                    except (ValueError, IndexError) as e:
-                        print(f"Error processing Claude response: {str(e)}")
-                        print(f"Raw response: {message.content}")
-
-                except Exception as e:
-                    print(f"Error during Claude-assisted matching: {str(e)}")
-                    print(f"Error details: {str(e)}")
+                                print(f"Invalid Claude response: {response_content}")
+                    except Exception as e:
+                        print(f"Claude-assisted matching error: {str(e)}")
 
             print(f"\n✗ No match found for: {title} by {artists_string}")
             return None
-                
+                    
         except Exception as e:
             print(f"Error searching for track: {str(e)}")
             print(f"Title: {title}, Artists: {artists_string}")
