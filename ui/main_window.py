@@ -109,9 +109,33 @@ class PlaylistItem(QListWidgetItem):
         super().__init__()
         self.playlist_id = playlist['id']
         self.playlist_name = playlist['name']
-        self.setText(self.playlist_name)  # Set the display text
+        
+        # Identify if this is a "Made For You" playlist
+        made_for_you_names = [
+            "Discover Weekly", 
+            "Release Radar",
+            "Daily Mix",
+            "On Repeat",
+            "Repeat Rewind",
+            "Your Time Capsule"
+        ]
+        is_made_for_you = any(name in playlist['name'] for name in made_for_you_names)
+        
+        # Add an icon/prefix for Made For You playlists
+        if is_made_for_you:
+            display_text = f"✨ {self.playlist_name}"  # Star emoji to indicate special playlist
+        else:
+            display_text = self.playlist_name
+            
+        self.setText(display_text)  # Set the display text
         self.setFlags(self.flags() | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsSelectable)
         self.setCheckState(Qt.CheckState.Unchecked)
+        
+        # Set tooltip with additional information for Made For You playlists
+        if is_made_for_you:
+            self.setToolTip(f"Made For You: {self.playlist_name}")
+            # Optional: You could use a different background color too
+            # self.setBackground(QColor(230, 230, 250))  # Light purple background
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -328,12 +352,46 @@ class MainWindow(QMainWindow):
         try:
             self.playlist_list.clear()
             print("Fetching playlists...")  # Debug print
-            playlists = self.spotify_service.get_playlists()
+            
+            # Use the new method to get all available playlists including Made For You
+            playlists = self.spotify_service.get_all_available_playlists()
+            
             print(f"Found {len(playlists['items'])} playlists")  # Debug print
+            
+            # Group playlists by type for better organization
+            regular_playlists = []
+            made_for_you_playlists = []
+            
+            # Known "Made For You" playlist names to categorize
+            made_for_you_names = [
+                "Discover Weekly", 
+                "Release Radar",
+                "Daily Mix",
+                "On Repeat",
+                "Repeat Rewind",
+                "Your Time Capsule"
+            ]
+            
+            # Sort playlists into categories
             for playlist in playlists['items']:
+                if any(name in playlist['name'] for name in made_for_you_names):
+                    made_for_you_playlists.append(playlist)
+                else:
+                    regular_playlists.append(playlist)
+            
+            # Add Made For You playlists first (they're special)
+            if made_for_you_playlists:
+                for playlist in made_for_you_playlists:
+                    print(f"Adding Made For You playlist: {playlist['name']}")  # Debug print
+                    item = PlaylistItem(playlist)
+                    self.playlist_list.addItem(item)
+            
+            # Then add regular playlists
+            for playlist in regular_playlists:
                 print(f"Adding playlist: {playlist['name']}")  # Debug print
                 item = PlaylistItem(playlist)
                 self.playlist_list.addItem(item)
+                
         except Exception as e:
             print(f"Error loading playlists: {str(e)}")  # Debug print
             QMessageBox.critical(self, "Error", f"Failed to load playlists: {str(e)}")

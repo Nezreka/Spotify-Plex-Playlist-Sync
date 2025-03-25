@@ -28,3 +28,4 @@ build/
 
 # Logs
 *.log
+.spotify_cache

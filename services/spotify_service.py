@@ -16,7 +16,7 @@ class SpotifyService:
                 client_id=os.getenv('SPOTIFY_CLIENT_ID'),
                 client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'),
                 redirect_uri='http://localhost:8888/callback',
-                scope='playlist-read-private playlist-read-collaborative',
+                scope='playlist-read-private playlist-read-collaborative user-follow-read user-read-private',
                 open_browser=True,
                 cache_path='.spotify_cache'
             )
@@ -47,6 +47,81 @@ class SpotifyService:
             return results
         except Exception as e:
             print(f"Error fetching playlists: {str(e)}")
+            raise
+
+    def get_featured_playlists(self):
+        """Get Spotify's featured playlists"""
+        try:
+            if not self.client:
+                raise Exception("Spotify client not initialized")
+            
+            print("Fetching featured playlists from Spotify...")
+            results = self.client.featured_playlists()
+            print(f"Retrieved {len(results['playlists']['items'])} featured playlists")
+            
+            return results['playlists']
+        except Exception as e:
+            print(f"Error fetching featured playlists: {str(e)}")
+            raise
+    
+    def get_made_for_you_playlists(self):
+        """Get personalized playlists like Discover Weekly and Release Radar"""
+        try:
+            if not self.client:
+                raise Exception("Spotify client not initialized")
+            
+            print("Fetching personalized playlists...")
+            # Get the user's ID
+            user_id = self.client.current_user()['id']
+            
+            # First, get all playlists - regular and followed
+            all_playlists = self.client.current_user_playlists()
+            
+            # Known "Made For You" playlist names to look for
+            made_for_you_names = [
+                "Discover Weekly", 
+                "Release Radar",
+                "Daily Mix",
+                "On Repeat",
+                "Repeat Rewind",
+                "Your Time Capsule"
+            ]
+            
+            made_for_you_playlists = []
+            for playlist in all_playlists['items']:
+                # Check if playlist name contains any of the Made For You names
+                if any(name in playlist['name'] for name in made_for_you_names):
+                    made_for_you_playlists.append(playlist)
+                    print(f"Found Made For You playlist: {playlist['name']}")
+            
+            return {'items': made_for_you_playlists}
+        except Exception as e:
+            print(f"Error fetching Made For You playlists: {str(e)}")
+            raise
+    
+    def get_all_available_playlists(self):
+        """Get all playlists including user playlists, followed, and Made For You"""
+        try:
+            # Get regular user playlists
+            user_playlists = self.get_playlists()
+            
+            # Get Made For You playlists
+            made_for_you = self.get_made_for_you_playlists()
+            
+            # Combine playlists - note some may be duplicated but UI will handle that
+            all_playlists = user_playlists['items'] + made_for_you['items']
+            
+            # Remove duplicates by playlist ID
+            unique_playlists = []
+            seen_ids = set()
+            for playlist in all_playlists:
+                if playlist['id'] not in seen_ids:
+                    unique_playlists.append(playlist)
+                    seen_ids.add(playlist['id'])
+            
+            return {'items': unique_playlists}
+        except Exception as e:
+            print(f"Error fetching all playlists: {str(e)}")
             raise
 
     def get_playlist_tracks(self, playlist_id):
